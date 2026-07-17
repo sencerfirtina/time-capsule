@@ -10,7 +10,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Http;
 using TimeCapsule.API.DTO;
 
-
 namespace TimeCapsule.API.Services
 {
     public class CapsuleMonitorService : BackgroundService
@@ -36,7 +35,6 @@ namespace TimeCapsule.API.Services
                         switch (capsule.Category)
                         {
                             case Entities.TriggerType.Weather:
-                                Console.WriteLine("Hava durumu abeeee");
 
                                 string apiUrl = "https://api.open-meteo.com/v1/forecast?latitude=38.48&longitude=28.14&current_weather=true";
                                 var client = _httpClientFactory.CreateClient();
@@ -46,6 +44,26 @@ namespace TimeCapsule.API.Services
                                     if(temp!=null)
                                     {
                                         Console.WriteLine($"Hava Sıcaklığı:{temp}");
+                                        double targetValueParsed = double.Parse(capsule.TargetValue);
+
+                                        bool isConditionMet = capsule.Operator switch
+                                        {
+                                            Entities.TriggerOperator.GreaterThan => temp > targetValueParsed,
+                                            
+                                            Entities.TriggerOperator.LessThan => temp < targetValueParsed,
+                                            
+                                            Entities.TriggerOperator.Equals => temp == targetValueParsed,
+
+                                            _ => false
+                                        };
+
+                                        if (isConditionMet)
+                                        {
+                                            capsule.IsOpened = true;
+                                            await _context.SaveChangesAsync();
+                                            Console.WriteLine($"{capsule.Id} numaralı kapsül başarıyla açıldı hemen göz atın!!");
+                                        }
+
                                     }
                                 }
                                 catch(Exception ex)
@@ -57,6 +75,44 @@ namespace TimeCapsule.API.Services
                                 break;
                             case Entities.TriggerType.Crypto:
                                 Console.WriteLine("Crypto abeeee");
+                                try
+                                {
+                                    if (capsule.MetaData == null)
+                                    {
+                                     Console.WriteLine("Gerekli veriler tam değil!");
+                                     break;   
+                                    }
+                                    //bir de kodun şu kısımlarının aşırı tekrar etmesi var bunları gerekirse fonksiyona alma kısmında kaldım
+                                    var metaDataObj = System.Text.Json.JsonSerializer.Deserialize<CryptoMetaDataDTO>(capsule.MetaData);  
+                                    string cryptoapiUrl = $"https://api.binance.com/api/v3/ticker/price?symbol={metaDataObj.symbol}";
+                                    var cryptoClient = _httpClientFactory.CreateClient();
+                                    var cryptoData = await cryptoClient.GetFromJsonAsync<BinanceResponse>(cryptoapiUrl);
+                                    if (cryptoData != null && cryptoData.price != null)
+                                    {
+                                        Console.WriteLine($"Güncel Fiyat:{cryptoData.price}");
+                                        double targetPriceParsed = double.Parse(capsule.TargetValue);
+                                        //şu dönüşümde noktayı kaybetmeme kısmını düzeltmekte kaldım
+                                        double currentPrice = double.Parse(cryptoData.price);
+                                        Console.WriteLine($"{currentPrice}");
+                                        bool conditionMet = capsule.Operator switch
+                                        {
+                                            Entities.TriggerOperator.GreaterThan => currentPrice > targetPriceParsed,
+                                            Entities.TriggerOperator.LessThan => currentPrice < targetPriceParsed,
+                                            Entities.TriggerOperator.Equals => currentPrice == targetPriceParsed,
+                                            _ => false
+                                        };
+                                        if (conditionMet)
+                                        {
+                                            capsule.IsOpened = true;
+                                            await _context.SaveChangesAsync();
+                                            Console.WriteLine($"{capsule.Id} numaralı kapsül başarıyla açıldı hemen göz atın!!"); 
+                                        }
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    Console.WriteLine($"Eyvah crypto kuryesi yolda kaldı... Hata:{ex}");
+                                }
                                 break;
                             default:
                                 Console.WriteLine("Bilinmeyen Kategori...");

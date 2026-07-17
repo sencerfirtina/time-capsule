@@ -10,7 +10,7 @@ namespace TimeCapsule.API.Entities
         public int Id { get; set; }
         public required string EncryptedContent { get; set; }
         public TriggerType Category { get; set; }
-        public TriggerOperator Operator { get; set; }
+        public TriggerOperator? Operator { get; set; }
         public required string TargetValue { get; set; }
         public string? MetaData { get; set; }
         public bool IsOpened { get; set; } = false;
@@ -19,7 +19,8 @@ namespace TimeCapsule.API.Entities
     public enum TriggerType
     {
         Weather,
-        Crypto
+        Crypto,
+        Date
     }
     public enum TriggerOperator
     {

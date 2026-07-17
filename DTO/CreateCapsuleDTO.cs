@@ -10,7 +10,7 @@ namespace TimeCapsule.API.DTO
     {
         public required string EncryptedContent { get; set; }
         public TriggerType Category { get; set; }
-        public TriggerOperator Operator { get; set; }
+        public TriggerOperator? Operator { get; set; }
         public required string TargetValue { get; set; }
         public string? MetaData { get; set; }
     }

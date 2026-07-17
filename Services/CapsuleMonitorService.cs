@@ -82,6 +82,19 @@ namespace TimeCapsule.API.Services
                                         }
                                     }
                                 break;
+                            case Entities.TriggerType.Date:
+                                DateTime now = DateTime.UtcNow;
+                                if (!DateTime.TryParse(capsule.TargetValue,CultureInfo.InvariantCulture,DateTimeStyles.None,out DateTime targetDateParsed))
+                                {
+                                    Console.WriteLine($"{capsule.Id} numaralı kapsül için geçersiz tarih formatı...");
+                                    continue;
+                                }
+                                if (now >= targetDateParsed)
+                                {
+                                    await OpenCapsuleAsync(capsule,_context);
+                                }
+
+                                break;
                             default:
                                 Console.WriteLine("Bilinmeyen Kategori...");
                                 break;
@@ -106,7 +119,7 @@ namespace TimeCapsule.API.Services
             }            
         }
 
-        private bool IsConditionMet(double? currentValue,double targetValue,Entities.TriggerOperator capsuleOperator)
+        private bool IsConditionMet(double? currentValue,double targetValue,Entities.TriggerOperator? capsuleOperator)
         {
          return capsuleOperator switch
          {

@@ -18,6 +18,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddHostedService<CapsuleMonitorService>();
 builder.Services.AddHttpClient();
+builder.Services.AddScoped<ICapsuleService,CapsuleService>();
 
 
 var app = builder.Build();

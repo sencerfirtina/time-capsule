@@ -20,7 +20,8 @@ namespace TimeCapsule.API.Entities
     {
         Weather,
         Crypto,
-        Date
+        Date,
+        GeoFence
     }
     public enum TriggerOperator
     {

@@ -7,6 +7,7 @@ using TimeCapsule.API.Data;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 using TimeCapsule.API.DTO;
+using TimeCapsule.API.Services;
 
 
 namespace TimeCapsule.API.Controllers
@@ -16,10 +17,12 @@ namespace TimeCapsule.API.Controllers
     public class TimeCapsulesController : ControllerBase
     {
      private readonly AppDbContext _context;
-     public TimeCapsulesController(AppDbContext context)
+     private readonly ICapsuleService _capsuleService;
+     public TimeCapsulesController(AppDbContext context,ICapsuleService capsuleService)
         {
             _context = context;
-        }   
+            _capsuleService = capsuleService;
+        }
 
     [HttpPost]
     public async Task<IActionResult> CreateCapsule([FromBody] CreateCapsuleDTO capsuleDTO)
@@ -37,5 +40,12 @@ namespace TimeCapsule.API.Controllers
 
             return Ok("Kapsül başarıyla gömüldü");
         }
+
+    [HttpPost("check-location")]
+    public async Task<IActionResult> CheckLocationTriggers([FromBody] LocationCheckRequestDTO userLocation)
+    {
+        var openedCapsuleIds = await _capsuleService.CheckGeoFencesAsync(userLocation.Latitude,userLocation.Longitude);
+        return Ok(new {Message = $"{openedCapsuleIds.Count()} adet kapsül açıldı!",OpenedIds = openedCapsuleIds});
+    }
     };
 }

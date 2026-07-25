@@ -8,5 +8,6 @@ namespace TimeCapsule.API.Services
     public interface ICapsuleService
     {
         Task<List<int>> CheckGeoFencesAsync(double userLat,double userLng);
+        Task ProcessBackgroundTriggersAsync();
     }
 }

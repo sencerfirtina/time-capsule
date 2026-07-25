@@ -48,4 +48,6 @@ namespace TimeCapsule.API.Controllers
         return Ok(new {Message = $"{openedCapsuleIds.Count()} adet kapsül açıldı!",OpenedIds = openedCapsuleIds});
     }
     };
+
+    
 }

@@ -15,13 +15,16 @@ namespace TimeCapsule.API.Entities
         public string? MetaData { get; set; }
         public bool IsOpened { get; set; } = false;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;   
+        public int UserID { get; set; }
+        public User User { get; set; } = null!;
     }
     public enum TriggerType
     {
         Weather,
         Crypto,
         Date,
-        GeoFence
+        GeoFence,
+        SpotifyTrackId
     }
     public enum TriggerOperator
     {

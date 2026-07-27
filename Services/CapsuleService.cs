@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using TimeCapsule.API.Data;
 using System.Globalization;
 using TimeCapsule.API.DTO;
+using TimeCapsule.API.Entities;
 
 namespace TimeCapsule.API.Services
 {
@@ -147,6 +148,24 @@ namespace TimeCapsule.API.Services
                 }
         }
     
+        public async Task CreateAndSaveCapsule(Entities.CapsuleEntity newCapsule)
+        {
+            _context.TimeCapsules.Add(newCapsule);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task<bool> TryUnlockSpotifyCapsuleAsync(int userId,string trackId)
+        {
+            var triggeredCapsule = await _context.TimeCapsules.FirstOrDefaultAsync(c=>c.UserID == userId && c.IsOpened == false && c.Category == TriggerType.SpotifyTrackId && c.TargetValue == trackId);
+
+            if (triggeredCapsule == null)
+            {
+                return false;
+            }
+            await OpenCapsuleAsync(triggeredCapsule,_context);
+            return true;
+        }
+
         private async Task<T?> FetchExternalDataAsync<T>(string apiUrl)
         {
             try

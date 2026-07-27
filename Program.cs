@@ -19,6 +19,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddHostedService<CapsuleMonitorService>();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<ICapsuleService,CapsuleService>();
+builder.Services.AddScoped<ISpotifyService,SpotifyService>();
 
 
 var app = builder.Build();

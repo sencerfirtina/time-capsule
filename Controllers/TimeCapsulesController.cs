@@ -16,11 +16,9 @@ namespace TimeCapsule.API.Controllers
     [Route("api/[controller]")]
     public class TimeCapsulesController : ControllerBase
     {
-     private readonly AppDbContext _context;
      private readonly ICapsuleService _capsuleService;
-     public TimeCapsulesController(AppDbContext context,ICapsuleService capsuleService)
+     public TimeCapsulesController(ICapsuleService capsuleService)
         {
-            _context = context;
             _capsuleService = capsuleService;
         }
 
@@ -35,9 +33,7 @@ namespace TimeCapsule.API.Controllers
                 TargetValue = capsuleDTO.TargetValue,
                 MetaData = capsuleDTO.MetaData
             };
-            _context.TimeCapsules.Add(newEntity);
-            await _context.SaveChangesAsync();
-
+            await _capsuleService.CreateAndSaveCapsule(newEntity);
             return Ok("Kapsül başarıyla gömüldü");
         }
 
@@ -48,6 +44,5 @@ namespace TimeCapsule.API.Controllers
         return Ok(new {Message = $"{openedCapsuleIds.Count()} adet kapsül açıldı!",OpenedIds = openedCapsuleIds});
     }
     };
-
     
 }

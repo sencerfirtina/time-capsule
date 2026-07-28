@@ -150,8 +150,9 @@ namespace TimeCapsule.API.Services
                 }
         }
     
-        public async Task CreateAndSaveCapsule(Entities.CapsuleEntity newCapsule)
+        public async Task CreateAndSaveCapsule(int userId,Entities.CapsuleEntity newCapsule)
         {
+            newCapsule.UserID = userId;
             _context.TimeCapsules.Add(newCapsule);
             await _context.SaveChangesAsync();
         }

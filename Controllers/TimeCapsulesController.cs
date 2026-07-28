@@ -35,7 +35,7 @@ namespace TimeCapsule.API.Controllers
                 TargetValue = capsuleDTO.TargetValue,
                 MetaData = capsuleDTO.MetaData
             };
-            await _capsuleService.CreateAndSaveCapsule(newEntity);
+            await _capsuleService.CreateAndSaveCapsule(1,newEntity);
             return Ok("Kapsül başarıyla gömüldü");
         }
 
@@ -65,7 +65,8 @@ namespace TimeCapsule.API.Controllers
         }
         return Ok(new {Message = "Bu şarkı için bir kapsülünüz yok başka şarkıları deneyinn!!",
                        Song = currentTrack.TrackName,
-                       Artist = currentTrack.ArtistName});
+                       Artist = currentTrack.ArtistName,
+                       TrackId = currentTrack.TrackId});
     }
 
     };

@@ -7,7 +7,7 @@ namespace TimeCapsule.API.Services
 {
     public interface ICapsuleService
     {
-        Task CreateAndSaveCapsule(Entities.CapsuleEntity newCapsule);
+        Task CreateAndSaveCapsule(int userId,Entities.CapsuleEntity newCapsule);
         Task<List<int>> CheckGeoFencesAsync(double userLat,double userLng);
         Task ProcessBackgroundTriggersAsync();
         Task<bool> TryUnlockSpotifyCapsuleAsync(int userId,string trackId);

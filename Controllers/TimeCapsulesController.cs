@@ -42,7 +42,7 @@ namespace TimeCapsule.API.Controllers
     [HttpPost("check-location")]
     public async Task<IActionResult> CheckLocationTriggers([FromBody] LocationCheckRequestDTO userLocation)
     {
-        var openedCapsuleIds = await _capsuleService.CheckGeoFencesAsync(userLocation.Latitude,userLocation.Longitude);
+        var openedCapsuleIds = await _capsuleService.CheckGeoFencesAsync(1,userLocation.Latitude,userLocation.Longitude);
         return Ok(new {Message = $"{openedCapsuleIds.Count()} adet kapsül açıldı!",OpenedIds = openedCapsuleIds});
     }
 

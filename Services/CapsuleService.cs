@@ -24,10 +24,10 @@ namespace TimeCapsule.API.Services
             _httpClientFactory = httpClientFactory;
             _logger = logger;
         }
-        public async Task<List<int>> CheckGeoFencesAsync(double userLat,double userLng)
+        public async Task<List<int>> CheckGeoFencesAsync(int userId,double userLat,double userLng)
         {
             var openedCapsules = new List<int>();
-            var pendingCapsules = await _context.TimeCapsules.Where(c=>c.IsOpened == false && c.Category == Entities.TriggerType.GeoFence).ToListAsync();
+            var pendingCapsules = await _context.TimeCapsules.Where(c=>c.UserID == userId && c.IsOpened == false && c.Category == Entities.TriggerType.GeoFence).ToListAsync();
             foreach (var capsule in pendingCapsules)
             {
                 string[] coordinates = capsule.TargetValue.Split(',');
@@ -48,8 +48,6 @@ namespace TimeCapsule.API.Services
             await _context.SaveChangesAsync();
             return openedCapsules;
         }
-
-        //Spotify eklemeye bak
 
         private double CalculateDistance(double lat1,double lon1, double lat2, double lon2)
         {

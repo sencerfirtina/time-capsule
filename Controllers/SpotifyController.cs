@@ -19,13 +19,11 @@ namespace TimeCapsule.API.Controllers
     public class SpotifyController : ControllerBase
     {
         private readonly IConfiguration _configuration;
-        private readonly IHttpClientFactory _httpClientFactory;
         private readonly ISpotifyService _spotifyService;
         private readonly ICapsuleService _capsuleService;
-        public SpotifyController(IConfiguration configuration,IHttpClientFactory httpClientFactory,ISpotifyService spotifyService,ICapsuleService capsuleService)
+        public SpotifyController(IConfiguration configuration,ISpotifyService spotifyService,ICapsuleService capsuleService)
         {
             _configuration = configuration;
-            _httpClientFactory = httpClientFactory;
             _spotifyService = spotifyService;
             _capsuleService = capsuleService;
         }
@@ -53,83 +51,14 @@ namespace TimeCapsule.API.Controllers
                 return BadRequest("Gerekli veri alınamadı!!");
             }
 
-            var client = _httpClientFactory.CreateClient();
-            string clientId = _configuration["Spotify:ClientId"]!;
-            string redirectUri = _configuration["Spotify:CallbackUrl"]!;
-            string clientSecret = _configuration["Spotify:ClientSecret"]!;
-            var tokenRequestData = new List<KeyValuePair<string, string>>
-            {
-                new KeyValuePair<string, string>("grant_type","authorization_code"),
-                new KeyValuePair<string, string>("code",code),
-                new KeyValuePair<string, string>("redirect_uri",redirectUri),
-                new KeyValuePair<string, string>("client_id",clientId),
-                new KeyValuePair<string, string>("client_secret",clientSecret)
-            };
-            var requestBody = new FormUrlEncodedContent(tokenRequestData);
-
-            var response = await client.PostAsync("https://accounts.spotify.com/api/token",requestBody);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                string errorResult = await response.Content.ReadAsStringAsync();
-                return BadRequest($"Spotify reddetti. Hata detayı: {errorResult}");
-            }
-            string jsonResult = await response.Content.ReadAsStringAsync();
-
-            var tokenData = JsonSerializer.Deserialize<SpotifyTokenResponseDTO>(jsonResult);
-            if (tokenData == null)
-            {
-                return BadRequest("Token okunamadı!!");
-            }
-
-            await _spotifyService.SaveOrUpdateTokenAsync(1,tokenData);
-            return Ok("Token'lar başarıyla DTO'ya çevrildi ve SQL'e yazıldı!");
-        }
-    
-        [HttpGet("currently-playing")]
-        public async Task<IActionResult> GetCurrentlyPlaying()
-        {
-
-            var client = _httpClientFactory.CreateClient();
-
-            var accessToken = await _spotifyService.GetAccessTokenAsync(1);
-
-            if (accessToken==null)
-            {
-                return BadRequest("Token alınamadı!! Tekrar deneyin");
-            }
-
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer",accessToken);
-
-            var response = await client.GetAsync("https://api.spotify.com/v1/me/player/currently-playing");
-
-            if (!response.IsSuccessStatusCode)
-            {
-                return BadRequest($"Spotify API Reddedildi. Durum Kodu: {response.StatusCode}");
-            }
-
-            if (response.StatusCode == System.Net.HttpStatusCode.NoContent)
-            {
-                return Ok("Şu an herhangi bir şarkı çalmıyor!! Bir şarkı açıp tekrar dene");
-            }
-
-            string jsonResult = await response.Content.ReadAsStringAsync();
-
-            using JsonDocument doc = JsonDocument.Parse(jsonResult);
-            JsonElement root = doc.RootElement;
+            bool isSuccess = await _spotifyService.ExchangeCodeForTokenAsync(1,code);
             
-            var item = root.GetProperty("item");
-            string? trackId = item.GetProperty("id").GetString();
-            //kontrol için bu ikisine gerek yok kaydederken ihtiyacımız var
-            //string? trackName = item.GetProperty("name").GetString();
-            //string? arstistName = item.GetProperty("artists")[0].GetProperty("name").GetString();
-            
-            bool didCapsuleOpened = await _capsuleService.TryUnlockSpotifyCapsuleAsync(1,trackId!);
-            if (didCapsuleOpened)
+            if (isSuccess)
             {
-                return Ok("Bir kapsül açıldı hemen kontrol edinn!!");
+                return Ok("Spotify hesabı başarıyla bağlandı ve token kaydedildi!");
             }
-            return Ok("Bu şarkı için bir kapsülünüz yok başka şarkıları deneyinn!!");
+
+            return BadRequest("Token dönüştürülürken bir sorun oluştu!!");
         }
     }
 }

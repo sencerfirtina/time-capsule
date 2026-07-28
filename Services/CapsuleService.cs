@@ -49,6 +49,8 @@ namespace TimeCapsule.API.Services
             return openedCapsules;
         }
 
+        //Spotify eklemeye bak
+
         private double CalculateDistance(double lat1,double lon1, double lat2, double lon2)
         {
             double dLat = ToRadians(lat2 - lat1);

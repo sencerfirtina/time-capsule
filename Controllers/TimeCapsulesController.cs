@@ -56,10 +56,11 @@ namespace TimeCapsule.API.Controllers
             return BadRequest(currentTrack.ErrorMessage);       
         }
 
-        bool didCapsuleOpened = await _capsuleService.TryUnlockSpotifyCapsuleAsync(1,currentTrack.TrackId!);
-        if (didCapsuleOpened)
+        var response = await _capsuleService.TryUnlockSpotifyCapsuleAsync(1,currentTrack.TrackId!);
+        if (response.isSuccess)
         {
-            return Ok(new {Message = "Bir kapsül açıldı hemen kontrol edinn!!",
+            string openedCapsules = string.Join(", ", response.openedCapsuleIds!);
+            return Ok(new {Message = $"Bu şarkıyı içeren {openedCapsules} id'li kapsül/kapsüller açıldı hemen kontrol edinn!!",
                            Song = currentTrack.TrackName,
                            Artist = currentTrack.ArtistName});
         }

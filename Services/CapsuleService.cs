@@ -155,16 +155,23 @@ namespace TimeCapsule.API.Services
             await _context.SaveChangesAsync();
         }
 
-        public async Task<bool> TryUnlockSpotifyCapsuleAsync(int userId,string trackId)
+        public async Task<(bool isSuccess, List<int>? openedCapsuleIds)> TryUnlockSpotifyCapsuleAsync(int userId,string trackId)
         {
-            var triggeredCapsule = await _context.TimeCapsules.FirstOrDefaultAsync(c=>c.UserID == userId && c.IsOpened == false && c.Category == TriggerType.SpotifyTrackId && c.TargetValue == trackId);
+            var triggeredCapsule = await _context.TimeCapsules.Where(c => c.UserID == userId && c.IsOpened == false && c.Category == TriggerType.SpotifyTrackId && c.TargetValue == trackId).ToListAsync();
+            var openedCapsuleIds = new List<int>();
 
-            if (triggeredCapsule == null)
+            if (triggeredCapsule.Count() == 0)
             {
-                return false;
+                return (false,null);
             }
-            await OpenCapsuleAsync(triggeredCapsule,_context);
-            return true;
+            foreach (var capsule in triggeredCapsule)
+            {
+                await OpenCapsuleAsync(capsule, _context,false);
+                openedCapsuleIds.Add(capsule.Id);
+            }
+            await _context.SaveChangesAsync(); 
+
+            return (true,openedCapsuleIds);
         }
 
         private async Task<T?> FetchExternalDataAsync<T>(string apiUrl)

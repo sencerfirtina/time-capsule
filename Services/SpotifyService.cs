@@ -11,6 +11,8 @@ using TimeCapsule.API.Entities;
 
 using System.Text.Json;
 using Microsoft.AspNetCore.Razor.TagHelpers;
+using System.Text;
+using Azure;
 
 namespace TimeCapsule.API.Services
 {
@@ -94,16 +96,17 @@ namespace TimeCapsule.API.Services
 
             string jsonResult = await response.Content.ReadAsStringAsync();
 
-            using JsonDocument doc = JsonDocument.Parse(jsonResult);
-            JsonElement root = doc.RootElement;
+            using (JsonDocument doc = JsonDocument.Parse(jsonResult))
+            {
+                JsonElement root = doc.RootElement;
             
-            var item = root.GetProperty("item");
-            string? trackId = item.GetProperty("id").GetString();
-            string? trackName = item.GetProperty("name").GetString();
-            string? arstistName = item.GetProperty("artists")[0].GetProperty("name").GetString();
+                var item = root.GetProperty("item");
+                string? trackId = item.GetProperty("id").GetString();
+                string? trackName = item.GetProperty("name").GetString();
+                string? arstistName = item.GetProperty("artists")[0].GetProperty("name").GetString();
 
-            return (true,null,trackId,trackName,arstistName);
-
+                return (true,null,trackId,trackName,arstistName);
+            }
         }
     
         public async Task<bool> ExchangeCodeForTokenAsync(int userId,string code)
@@ -141,6 +144,63 @@ namespace TimeCapsule.API.Services
             await SaveOrUpdateTokenAsync(userId,tokenData);
 
             return true;
+        }
+
+        public async Task<bool> RefreshAccessTokenAsync(int userId)
+        {
+            var user = await _context.Users.Include(u=>u.SpotifyToken).FirstOrDefaultAsync(u=>u.Id == userId);
+
+            if (user == null || user.SpotifyToken?.RefreshToken == null) 
+            {
+                return false;
+            }
+
+            var client = _httpClientFactory.CreateClient();
+
+            string spotifyRefreshTokenUrl = "https://accounts.spotify.com/api/token";
+
+            string clientId = _configuration["Spotify:ClientId"]!;
+            string clientSecret = _configuration["Spotify:ClientSecret"]!;
+            string refreshToken = user.SpotifyToken.RefreshToken;
+
+            var authHeaderValue = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{clientId}:{clientSecret}"));
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic",authHeaderValue);
+
+            var requestBody = new List<KeyValuePair<string, string>>
+            {
+                new KeyValuePair<string, string>("grant_type","refresh_token"),
+                new KeyValuePair<string, string>("refresh_token",refreshToken) 
+            };
+
+            var content = new FormUrlEncodedContent(requestBody);
+            
+            var response = await client.PostAsync(spotifyRefreshTokenUrl,content);
+            var responseString = await response.Content.ReadAsStringAsync();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return false;
+            }
+
+            using (JsonDocument doc = JsonDocument.Parse(responseString))
+            {
+                var accessToken = doc.RootElement.GetProperty("access_token").GetString();
+
+                if (doc.RootElement.TryGetProperty("refresh_token",out var freshRefreshToken))
+                {
+                    string newRefreshToken = freshRefreshToken.GetString()!;
+                    user.SpotifyToken.RefreshToken = newRefreshToken;
+                }
+
+                if (accessToken == null)
+                {
+                    return false;
+                }
+                user.SpotifyToken.AccessToken = accessToken;
+            }
+
+            await _context.SaveChangesAsync();
+            return true;            
         }
     }
 

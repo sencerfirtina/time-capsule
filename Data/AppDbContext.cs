@@ -28,6 +28,8 @@ namespace TimeCapsule.API.Data
             .WithOne(s=>s.User)
             .HasForeignKey<UserSpotifyToken>(s=>s.UserId);
 
+            modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+
             base.OnModelCreating(modelBuilder);
         }
     }

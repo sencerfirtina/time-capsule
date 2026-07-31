@@ -20,6 +20,7 @@ builder.Services.AddHostedService<CapsuleMonitorService>();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<ICapsuleService,CapsuleService>();
 builder.Services.AddScoped<ISpotifyService,SpotifyService>();
+builder.Services.AddScoped<IAuthService,AuthService>();
 
 
 var app = builder.Build();

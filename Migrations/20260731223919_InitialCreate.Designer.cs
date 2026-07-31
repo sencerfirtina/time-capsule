@@ -12,8 +12,8 @@ using TimeCapsule.API.Data;
 namespace TimeCapsule.API.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260727144746_Added SpotifyTrackId to CapsuleEntity")]
-    partial class AddedSpotifyTrackIdtoCapsuleEntity
+    [Migration("20260731223919_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -52,9 +52,6 @@ namespace TimeCapsule.API.Migrations
                     b.Property<int?>("Operator")
                         .HasColumnType("int");
 
-                    b.Property<string>("SpotifyTrackId")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("TargetValue")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -78,13 +75,24 @@ namespace TimeCapsule.API.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Username")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Email")
+                        .IsUnique();
+
+                    b.HasIndex("Username")
+                        .IsUnique();
 
                     b.ToTable("Users");
                 });

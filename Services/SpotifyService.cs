@@ -13,6 +13,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Razor.TagHelpers;
 using System.Text;
 using Azure;
+using System.Security.Principal;
 
 namespace TimeCapsule.API.Services
 {
@@ -83,6 +84,21 @@ namespace TimeCapsule.API.Services
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer",accessToken);
 
             var response = await client.GetAsync("https://api.spotify.com/v1/me/player/currently-playing");
+
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                bool isRefreshed = await RefreshAccessTokenAsync(1);
+                if (!isRefreshed)
+                {
+                    throw new Exception("Token yenilemedi yeniden giriş yapmanız gerekiyor!!");
+                }
+
+                var newAccessToken = await GetAccessTokenAsync(1);
+
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer",newAccessToken);
+
+                response = await client.GetAsync("https://api.spotify.com/v1/me/player/currently-playing");
+            }
 
             if (!response.IsSuccessStatusCode)
             {

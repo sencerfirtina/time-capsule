@@ -30,5 +30,19 @@ namespace TimeCapsule.API.Controllers
 
             return Ok("Registration completed successfully");
         }
+
+        [HttpPost("login")]
+        public async Task<IActionResult> Login([FromBody] UserLoginDTO request)
+        {
+            var response = await _authService.LoginAsync(request);
+
+            if (!response.isSuccess)
+            {
+                return Unauthorized(response.errorMessage);                
+            }
+
+            return Ok($"Login completed successfully, your token: {response.token}");
+
+        }        
     }
 }

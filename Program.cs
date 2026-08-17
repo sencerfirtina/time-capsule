@@ -2,6 +2,10 @@ using TimeCapsule.API.Data;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
 using TimeCapsule.API.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using Microsoft.AspNetCore.DataProtection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +20,21 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
 });
 
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+.AddJwtBearer(options =>
+{
+   var secretKey = builder.Configuration["JwtSettings:SecretKey"];
+
+   options.TokenValidationParameters = new TokenValidationParameters
+   {
+        ValidateIssuer = false,
+        ValidateAudience = false,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey!)) 
+   };
+});
+
 builder.Services.AddHostedService<CapsuleMonitorService>();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<ICapsuleService,CapsuleService>();
@@ -24,6 +43,9 @@ builder.Services.AddScoped<IAuthService,AuthService>();
 
 
 var app = builder.Build();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 

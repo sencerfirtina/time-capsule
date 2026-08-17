@@ -11,6 +11,7 @@ using Microsoft.EntityFrameworkCore;
 using TimeCapsule.API.Entities;
 using System.Net.Http.Headers;
 using TimeCapsule.API.Services;
+using Microsoft.AspNetCore.Authorization;
 
 namespace TimeCapsule.API.Controllers
 {
@@ -28,6 +29,7 @@ namespace TimeCapsule.API.Controllers
             _capsuleService = capsuleService;
         }
 
+        [Authorize]
         [HttpGet("login")]
         public IActionResult Login()
         {
@@ -39,6 +41,7 @@ namespace TimeCapsule.API.Controllers
             return Redirect(spotifyAuthUrl);
         }
 
+        [Authorize]
         [HttpGet("callback")]
         public async Task<IActionResult> Callback(string? code, string? error)
         {

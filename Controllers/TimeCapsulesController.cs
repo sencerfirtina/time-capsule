@@ -7,7 +7,9 @@ using TimeCapsule.API.Data;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 using TimeCapsule.API.DTO;
+using TimeCapsule.API.Extensions;
 using TimeCapsule.API.Services;
+using Microsoft.AspNetCore.Authorization;
 
 
 namespace TimeCapsule.API.Controllers
@@ -23,10 +25,11 @@ namespace TimeCapsule.API.Controllers
             _capsuleService = capsuleService;
             _spotifyService = spotifyService;
         }
-
+    [Authorize]
     [HttpPost]
     public async Task<IActionResult> CreateCapsule([FromBody] CreateCapsuleDTO capsuleDTO)
         {
+            int currentUserId = User.GetUserId();
             var newEntity = new Entities.CapsuleEntity
             {
                 EncryptedContent = capsuleDTO.EncryptedContent,
@@ -35,20 +38,25 @@ namespace TimeCapsule.API.Controllers
                 TargetValue = capsuleDTO.TargetValue,
                 MetaData = capsuleDTO.MetaData
             };
-            await _capsuleService.CreateAndSaveCapsule(1,newEntity);
+            await _capsuleService.CreateAndSaveCapsule(currentUserId, newEntity);
             return Ok("Kapsül başarıyla gömüldü");
         }
 
+    [Authorize]
     [HttpPost("check-location")]
     public async Task<IActionResult> CheckLocationTriggers([FromBody] LocationCheckRequestDTO userLocation)
     {
-        var openedCapsuleIds = await _capsuleService.CheckGeoFencesAsync(1,userLocation.Latitude,userLocation.Longitude);
+        int currentUserId = User.GetUserId();
+        var openedCapsuleIds = await _capsuleService.CheckGeoFencesAsync(currentUserId,userLocation.Latitude,userLocation.Longitude);
         return Ok(new {Message = $"{openedCapsuleIds.Count()} adet kapsül açıldı!",OpenedIds = openedCapsuleIds});
     }
 
+    [Authorize]
     [HttpGet("check-spotify-trigger")]
     public async Task<IActionResult> CheckSpotifyTrigger()
     {
+        int currentUserId = User.GetUserId();
+
         var currentTrack = await _spotifyService.GetCurrentlyPlayingAsync(1);
 
         if (!currentTrack.isSuccess)
@@ -56,7 +64,8 @@ namespace TimeCapsule.API.Controllers
             return BadRequest(currentTrack.ErrorMessage);       
         }
 
-        var response = await _capsuleService.TryUnlockSpotifyCapsuleAsync(1,currentTrack.TrackId!);
+        var response = await _capsuleService.TryUnlockSpotifyCapsuleAsync(currentUserId,currentTrack.TrackId!);
+        
         if (response.isSuccess)
         {
             string openedCapsules = string.Join(", ", response.openedCapsuleIds!);

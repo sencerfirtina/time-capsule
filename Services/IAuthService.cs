@@ -9,6 +9,6 @@ namespace TimeCapsule.API.Services
     public interface IAuthService
     {
         Task<(bool isSuccess,string? errorMessage)> RegisterAsync(UserRegisterDTO request);
-        //Task<string> LoginAsync(UserLoginDTO request);
+        Task<(bool isSuccess, string? token, string? errorMessage)> LoginAsync(UserLoginDTO request);
     }
 }

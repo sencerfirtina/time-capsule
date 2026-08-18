@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Diagnostics;
+using TimeCapsule.API.ExceptionHandlers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -40,12 +42,15 @@ builder.Services.AddHttpClient();
 builder.Services.AddScoped<ICapsuleService,CapsuleService>();
 builder.Services.AddScoped<ISpotifyService,SpotifyService>();
 builder.Services.AddScoped<IAuthService,AuthService>();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
 
 
 var app = builder.Build();
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseExceptionHandler();
 
 app.MapControllers();
 

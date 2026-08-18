@@ -57,7 +57,7 @@ namespace TimeCapsule.API.Controllers
     {
         int currentUserId = User.GetUserId();
 
-        var currentTrack = await _spotifyService.GetCurrentlyPlayingAsync(1);
+        var currentTrack = await _spotifyService.GetCurrentlyPlayingAsync(currentUserId);
 
         if (!currentTrack.isSuccess)
         {

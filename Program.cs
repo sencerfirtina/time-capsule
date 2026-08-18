@@ -8,6 +8,7 @@ using System.Text;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Diagnostics;
 using TimeCapsule.API.ExceptionHandlers;
+using TimeCapsule.API.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -36,6 +37,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey!)) 
    };
 });
+
+builder.Services.AddCustomCors(builder.Configuration);
 
 builder.Services.AddHostedService<CapsuleMonitorService>();
 builder.Services.AddHttpClient();

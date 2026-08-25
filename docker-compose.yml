@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  api-service:
+    build: .
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db-service
+    environment:
+      - ConnectionStrings__DefaultConnection="Server=db-service; database=TimeCapsuleDb; User Id=sa; Password=${DB_PASSWORD}; TrustServerCertificate=true;"
+      - Spotify__ClientId=${SPOTIFY_CLIENT_ID}
+      - Spotify__ClientSecret=${SPOTIFY_CLIENT_SECRET}
+      - JwtSettings__SecretKey=${JWT_SECRET_KEY}
+  
+  db-service:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=${DB_PASSWORD}
+    ports:
+      - "1433:1433"
+
+    

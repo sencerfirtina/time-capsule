@@ -9,7 +9,7 @@ namespace TimeCapsule.API.Extensions
     {
         public static IServiceCollection AddCustomCors(this IServiceCollection services, IConfiguration configuration)
         {
-            var allowedOrigins = configuration.GetSection("AllowedOrigins").Get<string[]>();
+            var allowedOrigins = configuration.GetSection("CorsSettings:AllowedOrigins").Get<string[]>();
 
             if (allowedOrigins == null || allowedOrigins.Length == 0)
             {

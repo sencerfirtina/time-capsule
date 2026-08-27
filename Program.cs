@@ -20,7 +20,13 @@ builder.Services.AddControllers()
 
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
+    sqlServerOptions => sqlServerOptions.EnableRetryOnFailure(
+        maxRetryCount:5,
+        maxRetryDelay: TimeSpan.FromSeconds(5),
+        errorNumbersToAdd: null
+    ) 
+    );
 });
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -56,6 +62,21 @@ app.UseAuthorization();
 app.UseExceptionHandler();
 
 app.MapControllers();
+
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<AppDbContext>();
+        context.Database.Migrate();
+    }
+    catch(Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();    
+        logger.LogError(ex,"An error occurred during the database migration process.");
+    }
+}
 
 app.Run();
 

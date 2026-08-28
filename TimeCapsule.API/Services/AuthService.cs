@@ -13,22 +13,23 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.Security.Claims;
 using Microsoft.AspNetCore.DataProtection;
+using TimeCapsule.API.Data.Repositories;
 
 namespace TimeCapsule.API.Services
 {
     public class AuthService : IAuthService
     {
-        private readonly AppDbContext _context;
+        private readonly IUserRepository _userRepository;
         private readonly IConfiguration _configuration;
-        public AuthService(AppDbContext context,IConfiguration configuration)
+        public AuthService(IUserRepository userRepository,IConfiguration configuration)
         {
-            _context = context;
+            _userRepository = userRepository;
             _configuration = configuration;
         }
 
         public async Task<(bool isSuccess,string? errorMessage)> RegisterAsync(UserRegisterDTO request)
         {
-            bool emailExists = await _context.Users.AnyAsync(u=>u.Email == request.Email);
+            bool emailExists = await _userRepository.ExistsByEmailAsync(request.Email);
 
             if (emailExists)
             {
@@ -36,7 +37,7 @@ namespace TimeCapsule.API.Services
                 return (false,message);
             }
 
-            bool usernameExists = await _context.Users.AnyAsync(u=>u.Username == request.Username);
+            bool usernameExists = await _userRepository.ExistsByUsernameAsync(request.Username);
             if (usernameExists)
             {
                 string message = "This username is already in use!";
@@ -52,15 +53,15 @@ namespace TimeCapsule.API.Services
                 PasswordHash = hashedPassword
             };
 
-            _context.Add(newUser);
-            await _context.SaveChangesAsync();
+            await _userRepository.AddNewUserAsync(newUser);
+            await _userRepository.SaveAsync();
 
             return (true,null);
         } 
 
         public async Task<(bool isSuccess, string? token, string? errorMessage)> LoginAsync(UserLoginDTO request)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u=>u.Email == request.Email);
+            var user = await _userRepository.FindUserAsync(request.Email);
 
             if (user == null)
             {
@@ -82,6 +83,7 @@ namespace TimeCapsule.API.Services
 
         private string GenerateJwtToken(User user)
         {
+            //.env'den okuyor mu kontrol et
             string secretKey = _configuration["JwtSettings:SecretKey"]!;
 
             var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));

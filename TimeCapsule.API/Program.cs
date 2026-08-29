@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Diagnostics;
 using TimeCapsule.API.ExceptionHandlers;
 using TimeCapsule.API.Extensions;
+using TimeCapsule.API.Data.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -51,6 +52,8 @@ builder.Services.AddHttpClient();
 builder.Services.AddScoped<ICapsuleService,CapsuleService>();
 builder.Services.AddScoped<ISpotifyService,SpotifyService>();
 builder.Services.AddScoped<IAuthService,AuthService>();
+builder.Services.AddScoped<ICapsuleRepository, CapsuleRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 

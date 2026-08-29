@@ -7,19 +7,26 @@ using TimeCapsule.API.Data;
 using System.Globalization;
 using TimeCapsule.API.DTO;
 using TimeCapsule.API.Entities;
+using TimeCapsule.API.Data.Repositories;
 
 namespace TimeCapsule.API.Services
 {
     public class CapsuleService : ICapsuleService
     {
         private readonly double EarthRadiusKm = 6371.0;
-        private readonly AppDbContext _context;
+        private readonly ICapsuleRepository _capsuleRepository;
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly ILogger<CapsuleService> _logger;
-        public CapsuleService(AppDbContext context,IServiceScopeFactory scopeFactory,IHttpClientFactory httpClientFactory,ILogger<CapsuleService> logger)
+        private static readonly TriggerType[] MonitorableCategories = new[]
         {
-            _context = context;
+            TriggerType.Weather,
+            TriggerType.Crypto,
+            TriggerType.Date
+        };
+        public CapsuleService(ICapsuleRepository capsuleRepository,IServiceScopeFactory scopeFactory,IHttpClientFactory httpClientFactory,ILogger<CapsuleService> logger)
+        {
+            _capsuleRepository = capsuleRepository; 
             _scopeFactory = scopeFactory;
             _httpClientFactory = httpClientFactory;
             _logger = logger;
@@ -27,7 +34,7 @@ namespace TimeCapsule.API.Services
         public async Task<List<int>> CheckGeoFencesAsync(int userId,double userLat,double userLng)
         {
             var openedCapsules = new List<int>();
-            var pendingCapsules = await _context.TimeCapsules.Where(c=>c.UserID == userId && c.IsOpened == false && c.Category == Entities.TriggerType.GeoFence).ToListAsync();
+            var pendingCapsules = await _capsuleRepository.GetPendingCapsulesByCategoryAsync(userId,TriggerType.GeoFence);
             foreach (var capsule in pendingCapsules)
             {
                 string[] coordinates = capsule.TargetValue.Split(',');
@@ -41,11 +48,11 @@ namespace TimeCapsule.API.Services
                 var distance = CalculateDistance(userLat,userLng,targetLat,targetLng);
                 if (distance <= 100)
                 {
-                    await OpenCapsuleAsync(capsule,_context,autoSave: false);
+                    await OpenCapsuleAsync(capsule, _capsuleRepository, autoSave: false);
                     openedCapsules.Add(capsule.Id);
                 }
             }
-            await _context.SaveChangesAsync();
+            await _capsuleRepository.SaveAsync();
             return openedCapsules;
         }
 
@@ -74,8 +81,8 @@ namespace TimeCapsule.API.Services
         {
             using (var scope = _scopeFactory.CreateScope())
                 {
-                    var _context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                    var unopenedCapsules = await _context.TimeCapsules.Where(t=>t.IsOpened == false && t.Category != Entities.TriggerType.GeoFence).ToListAsync();
+                    var capsuleRepo = scope.ServiceProvider.GetRequiredService<ICapsuleRepository>();
+                    var unopenedCapsules = await capsuleRepo.GetPendingCapsulesForBackroundAsync(MonitorableCategories);
                     foreach (var capsule in unopenedCapsules)
                     {
                         switch (capsule.Category)
@@ -94,7 +101,7 @@ namespace TimeCapsule.API.Services
 
                                         if (isMet)
                                         {
-                                            await OpenCapsuleAsync(capsule,_context);
+                                            await OpenCapsuleAsync(capsule,capsuleRepo);
                                         }
 
                                     }
@@ -123,7 +130,7 @@ namespace TimeCapsule.API.Services
                                         bool isMet = IsConditionMet(currentPrice,targetPriceParsed,capsule.Operator);
                                         if (isMet)
                                         {
-                                            await OpenCapsuleAsync(capsule,_context);
+                                            await OpenCapsuleAsync(capsule,capsuleRepo);
                                         }
                                     }
                                 break;
@@ -136,7 +143,7 @@ namespace TimeCapsule.API.Services
                                 }
                                 if (now >= targetDateParsed)
                                 {
-                                    await OpenCapsuleAsync(capsule,_context);
+                                    await OpenCapsuleAsync(capsule,capsuleRepo);
                                 }
 
                                 break;
@@ -151,13 +158,13 @@ namespace TimeCapsule.API.Services
         public async Task CreateAndSaveCapsule(int userId,Entities.CapsuleEntity newCapsule)
         {
             newCapsule.UserID = userId;
-            _context.TimeCapsules.Add(newCapsule);
-            await _context.SaveChangesAsync();
+            await _capsuleRepository.AddCapsuleAsync(newCapsule);
+            await _capsuleRepository.SaveAsync();
         }
 
         public async Task<(bool isSuccess, List<int>? openedCapsuleIds)> TryUnlockSpotifyCapsuleAsync(int userId,string trackId)
         {
-            var triggeredCapsule = await _context.TimeCapsules.Where(c => c.UserID == userId && c.IsOpened == false && c.Category == TriggerType.SpotifyTrackId && c.TargetValue == trackId).ToListAsync();
+            var triggeredCapsule = await _capsuleRepository.GetPendingSpotifyCapsulesAsync(userId,trackId);
             var openedCapsuleIds = new List<int>();
 
             if (triggeredCapsule.Count() == 0)
@@ -166,10 +173,10 @@ namespace TimeCapsule.API.Services
             }
             foreach (var capsule in triggeredCapsule)
             {
-                await OpenCapsuleAsync(capsule, _context,false);
+                await OpenCapsuleAsync(capsule, _capsuleRepository, false);
                 openedCapsuleIds.Add(capsule.Id);
             }
-            await _context.SaveChangesAsync(); 
+            await _capsuleRepository.SaveAsync();
 
             return (true,openedCapsuleIds);
         }
@@ -199,12 +206,12 @@ namespace TimeCapsule.API.Services
          };
         }
 
-        private async Task OpenCapsuleAsync(Entities.CapsuleEntity capsule, AppDbContext _context,bool autoSave = true)
+        private async Task OpenCapsuleAsync(Entities.CapsuleEntity capsule,ICapsuleRepository capsuleRepository, bool autoSave = true)
         {
             capsule.IsOpened = true;
             if (autoSave)
             {
-                await _context.SaveChangesAsync();
+                await capsuleRepository.SaveAsync();
             }
             _logger.LogInformation($"{capsule.Id} numaralı kapsül başarıyla açıldıı. Hemen kontrol edin!!");
         }

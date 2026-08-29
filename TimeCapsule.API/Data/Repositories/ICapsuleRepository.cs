@@ -10,6 +10,8 @@ namespace TimeCapsule.API.Data.Repositories
     {
         Task AddCapsuleAsync(CapsuleEntity capsule);
         Task<bool> SaveAsync();
-
+        Task<List<CapsuleEntity>> GetPendingCapsulesByCategoryAsync(int userId, TriggerType category);
+        Task<List<CapsuleEntity>> GetPendingCapsulesForBackroundAsync(IEnumerable<TriggerType> categories);
+        Task<List<CapsuleEntity>> GetPendingSpotifyCapsulesAsync(int userId,string trackId);
     }
 }

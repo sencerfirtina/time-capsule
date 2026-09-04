@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using TimeCapsule.API.Exceptions;
 
 namespace TimeCapsule.API.ExceptionHandlers
 {
@@ -30,6 +31,7 @@ namespace TimeCapsule.API.ExceptionHandlers
                 UnauthorizedAccessException => StatusCodes.Status401Unauthorized,
                 KeyNotFoundException => StatusCodes.Status404NotFound,
                 ArgumentException => StatusCodes.Status400BadRequest,
+                UserNotFoundException => StatusCodes.Status404NotFound,
 
                 _ => StatusCodes.Status500InternalServerError
             };

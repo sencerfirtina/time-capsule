@@ -15,7 +15,6 @@ namespace TimeCapsule.API.Services
     {
         private readonly double EarthRadiusKm = 6371.0;
         private readonly ICapsuleRepository _capsuleRepository;
-        private readonly IServiceScopeFactory _scopeFactory;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly ILogger<CapsuleService> _logger;
         private static readonly TriggerType[] MonitorableCategories = new[]
@@ -24,10 +23,9 @@ namespace TimeCapsule.API.Services
             TriggerType.Crypto,
             TriggerType.Date
         };
-        public CapsuleService(ICapsuleRepository capsuleRepository,IServiceScopeFactory scopeFactory,IHttpClientFactory httpClientFactory,ILogger<CapsuleService> logger)
+        public CapsuleService(ICapsuleRepository capsuleRepository,IHttpClientFactory httpClientFactory,ILogger<CapsuleService> logger)
         {
-            _capsuleRepository = capsuleRepository; 
-            _scopeFactory = scopeFactory;
+            _capsuleRepository = capsuleRepository;
             _httpClientFactory = httpClientFactory;
             _logger = logger;
         }
@@ -48,7 +46,7 @@ namespace TimeCapsule.API.Services
                 var distance = CalculateDistance(userLat,userLng,targetLat,targetLng);
                 if (distance <= 100)
                 {
-                    await OpenCapsuleAsync(capsule, _capsuleRepository, autoSave: false);
+                    await OpenCapsuleAsync(capsule, autoSave: false);
                     openedCapsules.Add(capsule.Id);
                 }
             }
@@ -79,10 +77,7 @@ namespace TimeCapsule.API.Services
    
         public async Task ProcessBackgroundTriggersAsync()
         {
-            using (var scope = _scopeFactory.CreateScope())
-                {
-                    var capsuleRepo = scope.ServiceProvider.GetRequiredService<ICapsuleRepository>();
-                    var unopenedCapsules = await capsuleRepo.GetPendingCapsulesForBackroundAsync(MonitorableCategories);
+                    var unopenedCapsules = await _capsuleRepository.GetPendingCapsulesForBackroundAsync(MonitorableCategories);
                     foreach (var capsule in unopenedCapsules)
                     {
                         switch (capsule.Category)
@@ -101,7 +96,7 @@ namespace TimeCapsule.API.Services
 
                                         if (isMet)
                                         {
-                                            await OpenCapsuleAsync(capsule,capsuleRepo);
+                                            await OpenCapsuleAsync(capsule);
                                         }
 
                                     }
@@ -124,13 +119,13 @@ namespace TimeCapsule.API.Services
                                     if (cryptoData != null && cryptoData.price != null)
                                     {
                                         Console.WriteLine($"Güncel Fiyat:{cryptoData.price}");
-                                        double targetPriceParsed = double.Parse(capsule.TargetValue);
+                                        double targetPriceParsed = double.Parse(capsule.TargetValue,CultureInfo.InvariantCulture);
                                         double currentPrice = double.Parse(cryptoData.price,CultureInfo.InvariantCulture);
                                         Console.WriteLine($"Güncel Fiyat Dönüştürülmüş:{currentPrice}");
                                         bool isMet = IsConditionMet(currentPrice,targetPriceParsed,capsule.Operator);
                                         if (isMet)
                                         {
-                                            await OpenCapsuleAsync(capsule,capsuleRepo);
+                                            await OpenCapsuleAsync(capsule);
                                         }
                                     }
                                 break;
@@ -143,7 +138,7 @@ namespace TimeCapsule.API.Services
                                 }
                                 if (now >= targetDateParsed)
                                 {
-                                    await OpenCapsuleAsync(capsule,capsuleRepo);
+                                    await OpenCapsuleAsync(capsule);
                                 }
 
                                 break;
@@ -152,7 +147,6 @@ namespace TimeCapsule.API.Services
                                 break;
                         }
                     }
-                }
         }
     
         public async Task CreateAndSaveCapsule(int userId,Entities.CapsuleEntity newCapsule)
@@ -173,7 +167,7 @@ namespace TimeCapsule.API.Services
             }
             foreach (var capsule in triggeredCapsule)
             {
-                await OpenCapsuleAsync(capsule, _capsuleRepository, false);
+                await OpenCapsuleAsync(capsule, false);
                 openedCapsuleIds.Add(capsule.Id);
             }
             await _capsuleRepository.SaveAsync();
@@ -206,12 +200,12 @@ namespace TimeCapsule.API.Services
          };
         }
 
-        private async Task OpenCapsuleAsync(Entities.CapsuleEntity capsule,ICapsuleRepository capsuleRepository, bool autoSave = true)
+        private async Task OpenCapsuleAsync(Entities.CapsuleEntity capsule, bool autoSave = true)
         {
             capsule.IsOpened = true;
             if (autoSave)
             {
-                await capsuleRepository.SaveAsync();
+                await _capsuleRepository.SaveAsync();
             }
             _logger.LogInformation($"{capsule.Id} numaralı kapsül başarıyla açıldıı. Hemen kontrol edin!!");
         }

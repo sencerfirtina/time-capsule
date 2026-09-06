@@ -13,5 +13,6 @@ namespace TimeCapsule.API.Data.Repositories
         Task AddNewUserAsync (User user);
         Task<bool> SaveAsync();
         Task<User?> FindUserAsync(string email);
+        Task<User?> FindUserWithSpotifyTokenAsync(int userId);
     }
 }

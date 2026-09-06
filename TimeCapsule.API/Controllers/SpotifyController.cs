@@ -12,6 +12,7 @@ using TimeCapsule.API.Entities;
 using System.Net.Http.Headers;
 using TimeCapsule.API.Services;
 using Microsoft.AspNetCore.Authorization;
+using TimeCapsule.API.Extensions;
 
 namespace TimeCapsule.API.Controllers
 {
@@ -45,6 +46,9 @@ namespace TimeCapsule.API.Controllers
         [HttpGet("callback")]
         public async Task<IActionResult> Callback(string? code, string? error)
         {
+
+            int currentUserId = User.GetUserId();
+
             if (!string.IsNullOrEmpty(error))
             {
                 return BadRequest("Spotify yetkilendirilmesi reddedildi:" + error);       
@@ -54,7 +58,7 @@ namespace TimeCapsule.API.Controllers
                 return BadRequest("Gerekli veri alınamadı!!");
             }
 
-            bool isSuccess = await _spotifyService.ExchangeCodeForTokenAsync(1,code);
+            bool isSuccess = await _spotifyService.ExchangeCodeForTokenAsync(currentUserId,code);
             
             if (isSuccess)
             {

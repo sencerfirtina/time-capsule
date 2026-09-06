@@ -35,5 +35,9 @@ namespace TimeCapsule.API.Data.Repositories
         {
             return await _context.Users.FirstOrDefaultAsync(u=>u.Email == email);
         }
+        public async Task<User?> FindUserWithSpotifyTokenAsync(int userId)
+        {
+            return await _context.Users.Include(u=>u.SpotifyToken).FirstOrDefaultAsync(u=>u.Id == userId);
+        }
     }
 }

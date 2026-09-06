@@ -14,18 +14,20 @@ using Microsoft.AspNetCore.Razor.TagHelpers;
 using System.Text;
 using Azure;
 using System.Security.Principal;
+using TimeCapsule.API.Exceptions;
+using TimeCapsule.API.Data.Repositories;
 
 namespace TimeCapsule.API.Services
 {
     public class SpotifyService : ISpotifyService
     {
-        private readonly AppDbContext _context;
+        private readonly IUserRepository _userRepository;
         private readonly ILogger<SpotifyService> _logger;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IConfiguration _configuration;
-        public SpotifyService(AppDbContext context,ILogger<SpotifyService> logger,IHttpClientFactory httpClientFactory,IConfiguration configuration)
+        public SpotifyService(IUserRepository userRepository,ILogger<SpotifyService> logger,IHttpClientFactory httpClientFactory,IConfiguration configuration)
         {
-            _context = context;
+            _userRepository = userRepository;
             _logger = logger;
             _httpClientFactory = httpClientFactory;
             _configuration = configuration;
@@ -33,12 +35,15 @@ namespace TimeCapsule.API.Services
 
         public async Task SaveOrUpdateTokenAsync(int userId,SpotifyTokenResponseDTO tokenData)
         {
-            //Test user
-            var user = await _context.Users.Include(u=>u.SpotifyToken).FirstOrDefaultAsync(u=>u.Id == 1);
+            
+            var user = await _userRepository.FindUserWithSpotifyTokenAsync(userId); 
 
-            //will add user null control
+            if (user == null)
+            {
+                throw new UserNotFoundException(userId);
+            }
 
-            if(user!.SpotifyToken != null)
+            if(user.SpotifyToken != null)
             {
                 user.SpotifyToken.AccessToken = tokenData.AccessToken;
                 user.SpotifyToken.RefreshToken = tokenData.RefreshToken;
@@ -54,12 +59,12 @@ namespace TimeCapsule.API.Services
                 };
                 user.SpotifyToken = newSpotifyToken;
             }
-            await _context.SaveChangesAsync();
+            await _userRepository.SaveAsync();
         }
 
         public async Task<string?> GetAccessTokenAsync(int userId)
         {
-            var user = await _context.Users.Include(u=>u.SpotifyToken).FirstOrDefaultAsync(u=>u.Id == 1);
+            var user = await _userRepository.FindUserWithSpotifyTokenAsync(userId); 
             if(user?.SpotifyToken == null)
             {
                 _logger.LogError("Kullanıcı veya Spotify bağlantısı bulunamadı. Önce login yapın");
@@ -164,7 +169,7 @@ namespace TimeCapsule.API.Services
 
         public async Task<bool> RefreshAccessTokenAsync(int userId)
         {
-            var user = await _context.Users.Include(u=>u.SpotifyToken).FirstOrDefaultAsync(u=>u.Id == userId);
+            var user = await _userRepository.FindUserWithSpotifyTokenAsync(userId);
 
             if (user == null || user.SpotifyToken?.RefreshToken == null) 
             {
@@ -215,7 +220,7 @@ namespace TimeCapsule.API.Services
                 user.SpotifyToken.AccessToken = accessToken;
             }
 
-            await _context.SaveChangesAsync();
+            await _userRepository.SaveAsync();
             return true;            
         }
     }

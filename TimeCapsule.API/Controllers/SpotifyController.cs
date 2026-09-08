@@ -51,21 +51,15 @@ namespace TimeCapsule.API.Controllers
 
             if (!string.IsNullOrEmpty(error))
             {
-                return BadRequest("Spotify yetkilendirilmesi reddedildi:" + error);       
+                return BadRequest("Spotify authorization was denied" + error);       
             }
             if (string.IsNullOrEmpty(code))
             {
-                return BadRequest("Gerekli veri alınamadı!!");
+                return BadRequest("The required data could not be retrieved");
             }
 
-            bool isSuccess = await _spotifyService.ExchangeCodeForTokenAsync(currentUserId,code);
-            
-            if (isSuccess)
-            {
-                return Ok("Spotify hesabı başarıyla bağlandı ve token kaydedildi!");
-            }
-
-            return BadRequest("Token dönüştürülürken bir sorun oluştu!!");
+            await _spotifyService.ExchangeCodeForTokenAsync(currentUserId,code);
+            return Ok("Token saved successfully");
         }
     }
 }

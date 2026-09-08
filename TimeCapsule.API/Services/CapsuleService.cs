@@ -89,7 +89,7 @@ namespace TimeCapsule.API.Services
                                 var temp = weatherData?.current_weather.temperature;
                                 if(temp!=null)
                                     {
-                                        Console.WriteLine($"Hava Sıcaklığı:{temp}");
+                                        Console.WriteLine($"Current Temperature:{temp}");
                                         double targetValueParsed = double.Parse(capsule.TargetValue);
 
                                         bool isMet = IsConditionMet(temp,targetValueParsed,capsule.Operator);
@@ -118,10 +118,9 @@ namespace TimeCapsule.API.Services
                                     var cryptoData = await FetchExternalDataAsync<BinanceResponse>(cryptoapiUrl);
                                     if (cryptoData != null && cryptoData.price != null)
                                     {
-                                        Console.WriteLine($"Güncel Fiyat:{cryptoData.price}");
                                         double targetPriceParsed = double.Parse(capsule.TargetValue,CultureInfo.InvariantCulture);
                                         double currentPrice = double.Parse(cryptoData.price,CultureInfo.InvariantCulture);
-                                        Console.WriteLine($"Güncel Fiyat Dönüştürülmüş:{currentPrice}");
+                                        Console.WriteLine($"Current Price:{currentPrice}");
                                         bool isMet = IsConditionMet(currentPrice,targetPriceParsed,capsule.Operator);
                                         if (isMet)
                                         {
@@ -184,7 +183,7 @@ namespace TimeCapsule.API.Services
             }
             catch(Exception ex)
             {
-                Console.WriteLine($"Exception while waiting for a response... Message:{ex}");
+                Console.WriteLine($"Exception while waiting for a response... Message:{ex.Message}");
                 return default(T);
             }            
         }

@@ -64,8 +64,12 @@ namespace TimeCapsule.API.Controllers
             return BadRequest(currentTrack.ErrorMessage);       
         }
 
-        var response = await _capsuleService.TryUnlockSpotifyCapsuleAsync(currentUserId,currentTrack.TrackId!);
-        
+        if (currentTrack.TrackId == null)
+        {
+            throw new Exception("Track ID could not be found!");
+        }
+        var response = await _capsuleService.TryUnlockSpotifyCapsuleAsync(currentUserId,currentTrack.TrackId);
+
         if (response.isSuccess)
         {
             string openedCapsules = string.Join(", ", response.openedCapsuleIds!);

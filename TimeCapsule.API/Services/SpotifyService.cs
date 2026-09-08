@@ -60,30 +60,34 @@ namespace TimeCapsule.API.Services
                 user.SpotifyToken = newSpotifyToken;
             }
             await _userRepository.SaveAsync();
+
         }
 
         public async Task<string?> GetAccessTokenAsync(int userId)
         {
             var user = await _userRepository.FindUserWithSpotifyTokenAsync(userId); 
-            if(user?.SpotifyToken == null)
+            if(user == null)
             {
-                _logger.LogError("Kullanıcı veya Spotify bağlantısı bulunamadı. Önce login yapın");
-                return null;
+                throw new UserNotFoundException(userId);
             }
+            if (user.SpotifyToken == null)
+            {
+                throw new NotFoundException("No access to Spotify. Please log in first!");
+            }            
 
             return user.SpotifyToken.AccessToken;
         }
     
-        public async Task<(bool isSuccess, string? ErrorMessage, string? TrackId,string? TrackName,string? ArtistName)> GetCurrentlyPlayingAsync(int userId)
+        public async Task<(bool isSuccess, string? ErrorMessage,string? TrackId,string? TrackName,string? ArtistName)> GetCurrentlyPlayingAsync(int userId)
         {
 
             var client = _httpClientFactory.CreateClient();
 
-            var accessToken = await GetAccessTokenAsync(1);
+            var accessToken = await GetAccessTokenAsync(userId);
 
             if (accessToken==null)
             {
-                return (false,"Spotify hesabınız bağlı değil. Lütfen önce giriş yapın!",null,null,null);
+                throw new Exception("Could not found access token");
             }
 
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer",accessToken);
@@ -92,13 +96,9 @@ namespace TimeCapsule.API.Services
 
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
-                bool isRefreshed = await RefreshAccessTokenAsync(1);
-                if (!isRefreshed)
-                {
-                    throw new Exception("Token yenilemedi yeniden giriş yapmanız gerekiyor!!");
-                }
+                await RefreshAccessTokenAsync(userId);
 
-                var newAccessToken = await GetAccessTokenAsync(1);
+                var newAccessToken = await GetAccessTokenAsync(userId);
 
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer",newAccessToken);
 
@@ -107,12 +107,12 @@ namespace TimeCapsule.API.Services
 
             if (!response.IsSuccessStatusCode)
             {
-                return (false,$"Spotify API Reddedildi. Durum Kodu: {response.StatusCode}",null,null,null);
+                throw new Exception($"Spotify API denied. Status Code: {response.StatusCode}");
             }
 
             if (response.StatusCode == System.Net.HttpStatusCode.NoContent)
             {
-                return (false,"Şu an herhangi bir şarkı çalmıyor!! Bir şarkı açıp tekrar deneyin",null,null,null);
+                return (false,"No song is playing right now; please play a song and try again",null,null,null);
             }
 
             string jsonResult = await response.Content.ReadAsStringAsync();
@@ -130,7 +130,7 @@ namespace TimeCapsule.API.Services
             }
         }
     
-        public async Task<bool> ExchangeCodeForTokenAsync(int userId,string code)
+        public async Task ExchangeCodeForTokenAsync(int userId,string code)
         {
             var client = _httpClientFactory.CreateClient();
             string clientId = _configuration["Spotify:ClientId"]!;
@@ -151,7 +151,7 @@ namespace TimeCapsule.API.Services
             if (!response.IsSuccessStatusCode)
             {
                 string errorResult = await response.Content.ReadAsStringAsync();
-                throw new Exception($"Spotify reddetti. Hata detayı: {errorResult}");
+                throw new Exception($"Spotify denied access. Error details: {errorResult}");
             }
             string jsonResult = await response.Content.ReadAsStringAsync();
 
@@ -159,21 +159,23 @@ namespace TimeCapsule.API.Services
 
             if (tokenData == null)
             {
-                return false;
+                throw new Exception("Could not get Token Data");
             }
 
             await SaveOrUpdateTokenAsync(userId,tokenData);
-
-            return true;
         }
 
-        public async Task<bool> RefreshAccessTokenAsync(int userId)
+        public async Task RefreshAccessTokenAsync(int userId)
         {
             var user = await _userRepository.FindUserWithSpotifyTokenAsync(userId);
 
-            if (user == null || user.SpotifyToken?.RefreshToken == null) 
+            if (user == null) 
             {
-                return false;
+                throw new UserNotFoundException(userId);
+            }
+            if (user.SpotifyToken?.RefreshToken == null)
+            {
+                throw new NotFoundException("The token could not be refreshed; you need to log in again!");
             }
 
             var client = _httpClientFactory.CreateClient();
@@ -200,7 +202,7 @@ namespace TimeCapsule.API.Services
 
             if (!response.IsSuccessStatusCode)
             {
-                return false;
+                throw new Exception("The Spotify Service is unavailable");
             }
 
             using (JsonDocument doc = JsonDocument.Parse(responseString))
@@ -215,13 +217,13 @@ namespace TimeCapsule.API.Services
 
                 if (accessToken == null)
                 {
-                    return false;
+                    throw new Exception("Could not get Access Token");
                 }
+
                 user.SpotifyToken.AccessToken = accessToken;
             }
 
-            await _userRepository.SaveAsync();
-            return true;            
+            await _userRepository.SaveAsync();        
         }
     }
 

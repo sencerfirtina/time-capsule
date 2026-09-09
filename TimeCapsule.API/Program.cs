@@ -21,12 +21,13 @@ builder.Services.AddControllers()
 
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"),
-    sqlServerOptions => sqlServerOptions.EnableRetryOnFailure(
-        maxRetryCount:5,
-        maxRetryDelay: TimeSpan.FromSeconds(5),
-        errorNumbersToAdd: null
-    ) 
+    options.UseNpgsql(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+
+        ngpgsqlOptions =>
+        {
+            ngpgsqlOptions.EnableRetryOnFailure();
+        }
     );
 });
 

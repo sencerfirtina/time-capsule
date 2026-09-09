@@ -12,7 +12,6 @@ using TimeCapsule.API.Entities;
 using System.Text.Json;
 using Microsoft.AspNetCore.Razor.TagHelpers;
 using System.Text;
-using Azure;
 using System.Security.Principal;
 using TimeCapsule.API.Exceptions;
 using TimeCapsule.API.Data.Repositories;

@@ -10,23 +10,25 @@ services:
     depends_on:
       - db-service
     environment:
-      - ConnectionStrings__DefaultConnection=Server=db-service; database=TimeCapsuleDb; User Id=sa; Password=${DB_PASSWORD}; TrustServerCertificate=true;
+      - ConnectionStrings__DefaultConnection="Host=db-service;Port=5432;Database=TimeCapsuleDb;Username=postgres;Password=${DB_PASSWORD};"
       - Spotify__ClientId=${SPOTIFY_CLIENT_ID}
       - Spotify__ClientSecret=${SPOTIFY_CLIENT_SECRET}
       - JwtSettings__SecretKey=${JWT_SECRET_KEY}
   
   db-service:
-    image: mcr.microsoft.com/mssql/server:2022-latest
+    image: postgres:16-alpine
+    container_name: postgres_db
     environment:
-      - ACCEPT_EULA=Y
-      - MSSQL_SA_PASSWORD=${DB_PASSWORD}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: TimeCapsuleDb
     ports:
-      - "1433:1433"
+      - "5432:5432"
     volumes:
-      - mssql-data:/var/opt/mssql/data
+      - pg-data:/var/lib/postgresql/data
   
 volumes:
-  mssql-data:
+  pg-data:
   
 
     

@@ -77,8 +77,7 @@ using (var scope = app.Services.CreateScope())
     }
     catch(Exception ex)
     {
-        var logger = services.GetRequiredService<ILogger<Program>>();    
-        logger.LogError(ex,"An error occurred during the database migration process.");
+        throw new Exception($"An error occurred during the database migration process. Details:{ex.Message}");
     }
 }
 

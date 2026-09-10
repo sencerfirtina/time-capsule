@@ -10,5 +10,7 @@ namespace TimeCapsule.API.Services
     {
         Task<(bool isSuccess,string? errorMessage)> RegisterAsync(UserRegisterDTO request);
         Task<(bool isSuccess, string? token, string? errorMessage)> LoginAsync(UserLoginDTO request);
+        string GenerateStateToken(string userId, int expirationMinutes);
+        string? ValidateStateTokenAndGetUserId(string stateJwt);
     }
 }

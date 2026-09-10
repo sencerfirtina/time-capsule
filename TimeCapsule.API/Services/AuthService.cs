@@ -83,7 +83,6 @@ namespace TimeCapsule.API.Services
 
         private string GenerateJwtToken(User user)
         {
-            //.env'den okuyor mu kontrol et
             string secretKey = _configuration["JwtSettings:SecretKey"]!;
 
             var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
@@ -112,6 +111,69 @@ namespace TimeCapsule.API.Services
 
             return jwtString;
         }
+
+        public string GenerateStateToken(string userId, int expirationMinutes)
+        {
+            var claims = new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, userId)
+            };
+
+            string secretKey = _configuration["JwtSettings:SecretKey"]!;
+
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
+
+            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+
+            var token = new JwtSecurityToken
+            (
+                issuer:null,
+                audience:null,
+                claims: claims,
+                notBefore:DateTime.UtcNow,
+                expires:DateTime.UtcNow.AddMinutes(expirationMinutes),
+                signingCredentials:credentials
+            );
+            
+            var tokenHandler = new JwtSecurityTokenHandler();
+            string jwtString = tokenHandler.WriteToken(token);
+            return jwtString;
+        }    
         
+        public string? ValidateStateTokenAndGetUserId(string stateJwt)
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            
+            string secretKey = _configuration["JwtSettings:SecretKey"]!;
+
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
+
+            var validationParameters = new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = securityKey,
+                ValidateIssuer = false,
+                ValidateAudience = false,
+                ValidateLifetime = true,
+                ClockSkew = TimeSpan.Zero
+            };
+
+            try
+            {
+                var principal = tokenHandler.ValidateToken(stateJwt,validationParameters,out SecurityToken validatedToken);
+
+                var userId = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+                if (String.IsNullOrEmpty(userId))
+                {
+                    throw new Exception("The ID could not be retrieved");
+                }
+                return userId;
+            }
+            catch
+            {
+                return null;
+            }
+        }
     }
 }

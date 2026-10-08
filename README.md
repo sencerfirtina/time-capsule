@@ -1,6 +1,6 @@
 # TimeCapsule API ⏳
 
-TimeCapsule, kullanıcıların Spotify hesaplarını bağlayarak kişisel müziklerini de içerebilen zaman kapsülleri oluşturmasını sağlayan modern, durumsuz (stateless) bir arka uç (backend) servisidir. 
+TimeCapsule, kullanıcıların hava sıcaklığı, crypto değerleri, tarih, konum ve Spotify hesaplarını bağlayarak kişisel müziklerini tetikleyici olarak içerebilen zaman kapsülleri oluşturmasını sağlayan modern, durumsuz (stateless) bir arka uç (backend) servisidir. 
 
 Proje şu an **Phase 1 (Backend & Altyapı)** aşamasını tamamlamıştır. Kullanıcı arayüzü (UI) geliştirme aşamasındadır.
 

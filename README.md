@@ -10,13 +10,13 @@ Proje şu an **Phase 1 (Backend & Altyapı)** aşamasını tamamlamıştır. Kul
 * **Konteynerizasyon & Çevresel İzolasyon:** Uygulama tamamen Dockerize edilmiş olup, veritabanı bağlantıları ve API anahtarları Environment Variable'lar üzerinden yönetilmektedir.
 * **Otomatik Veritabanı Yönetimi:** Uygulama ayağa kalkarken `Entity Framework Core` üzerinden `Database.Migrate()` işlemini otomatik olarak gerçekleştirir.
 
-## 🛠 Teknoloji Yığını
+## 🛠 Tech Stack
 * **Framework:** C# / ASP.NET Core Web API
 * **Veritabanı:** PostgreSQL & Entity Framework Core
 * **Kimlik Doğrulama:** JWT (JSON Web Token), Spotify OAuth2 API
 * **Altyapı:** Docker, Render (Cloud Hosting)
 
-## 🚧 Yol Haritası (Roadmap)
+## 🚧 Roadmap
 - [x] Temel API uç noktalarının oluşturulması
 - [x] PostgreSQL entegrasyonu ve Docker imajının hazırlanması
 - [x] Render üzerinde CI/CD ve canlıya alım
